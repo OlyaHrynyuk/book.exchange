@@ -19,26 +19,38 @@
         {% endif %}
     </div>
 
-    {% if user.is_authenticated and user != book.owner and book.available %}
-        <div class="offer-section">
-            <h2>Запропонувати обмін</h2>
-            {% if offer_form %}
-                <form method="post" action="{% url 'make_offer' book.id %}">
+    {% if user.is_authenticated %}
+        {% if user != book.owner and book.available %}
+            <div class="offer-section">
+                <h2>Запропонувати обмін</h2>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if offer_form %}
+                    <form method="post" action="{% url 'make_offer' book.id %}">
+                        {% csrf_token %}
+                        {{ offer_form.as_p }}
+                        <button type="submit" class="btn btn-primary">Надіслати пропозицію</button>
+                    </form>
+                {% else %}
+                    <p>У вас немає книг, доступних для обміну.</p>
+                    <a href="{% url 'add_book' %}" class="btn btn-secondary">Додати книгу</a>
+                {% endif %}
+            </div>
+        {% elif user == book.owner %}
+            <div class="owner-actions">
+                <a href="{% url 'edit_book' book.id %}" class="btn btn-warning">Редагувати</a>
+                <form method="post" action="{% url 'delete_book' book.id %}" style="display:inline;">
                     {% csrf_token %}
-                    {{ offer_form.as_p }}
-                    <button type="submit">Надіслати пропозицію</button>
+                    <button type="submit" class="btn btn-danger">Видалити</button>
                 </form>
-            {% else %}
-                <p>У вас немає книг, доступних для обміну.</p>
-                <a href="{% url 'add_book' %}" class="button">Додати книгу</a>
-            {% endif %}
-        </div>
-    {% elif user == book.owner %}
-        <div class="owner-actions">
-            <a href="{% url 'edit_book' book.id %}" class="button">Редагувати</a>
-            <a href="{% url 'delete_book' book.id %}" class="button" style="background-color: #dc3545;">Видалити</a>
-        </div>
+            </div>
+        {% endif %}
     {% endif %}
 
-    <a href="{% url 'book_list' %}">Назад до списку книг</a>
+    <a href="{% url 'book_list' %}" class="btn btn-light">Назад до списку книг</a>
 {% endblock %}

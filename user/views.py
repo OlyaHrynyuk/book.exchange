@@ -47,7 +47,7 @@ def book_detail(request, book_id):
         'book': book,
         'offer_form': offer_form
     }
-    return render(request, 'book_detail.html', context)
+    return render(request, 'bookExchange/book_detail.html', context)
 
 
 # Аутентифіковані користувачі
@@ -104,38 +104,37 @@ def delete_book(request, book_id):
 def make_offer(request, book_id):
     requested_book = get_object_or_404(Book, id=book_id)
 
-    # Перевірка, що користувач не намагається обміняти свою ж книгу
     if requested_book.owner == request.user:
         messages.error(request, 'Ви не можете запропонувати обмін на власну книгу!')
         return redirect('book_detail', book_id=book_id)
 
     if request.method == 'POST':
-        form = OfferForm(request.user, request.POST)
+        form = OfferForm(request.POST)
+
         if form.is_valid():
             offer = form.save(commit=False)
             offer.requested_book = requested_book
-
-            # Перевірка на наявність дублікатів пропозицій
-            existing_offer = Offer.objects.filter(
-                offered_book=offer.offered_book,
-                requested_book=requested_book,
-                status='pending'
-            ).exists()
-
-            if existing_offer:
-                messages.error(request, 'Ви вже зробили пропозицію обміну для цієї книги!')
-            else:
-                offer.save()
-                messages.success(request, 'Пропозицію обміну створено успішно!')
-
+            offer.offered_book = form.cleaned_data['offered_book']
+            offer.status = 'pending'
+            offer.save()
+            messages.success(request, 'Пропозицію обміну створено успішно!')
             return redirect('book_detail', book_id=book_id)
+        else:
+            messages.error(request, 'Форма містить помилки. Перевірте правильність введених даних.')
     else:
+        user_books = Book.objects.filter(owner=request.user, available=True).exclude(id=book_id)
+
+        if not user_books.exists():
+            messages.warning(request, 'У вас немає книг, доступних для обміну.')
+            return redirect('book_detail', book_id=book_id)
+
         form = OfferForm(user=request.user)
 
-    return render(request, 'make_offer.html', {
+    context = {
         'form': form,
-        'requested_book': requested_book
-    })
+        'requested_book': requested_book,
+    }
+    return render(request, 'bookExchange/make_offer.html', context)
 
 
 @login_required
