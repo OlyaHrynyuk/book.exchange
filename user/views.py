@@ -97,7 +97,7 @@ def delete_book(request, book_id):
         messages.success(request, 'Книгу видалено успішно!')
         return redirect('my_books')
 
-    return render(request, 'book_confirm_delete.html', {'book': book})
+    return render(request, 'book_confirm__delete.html', {'book': book})
 
 
 @login_required
